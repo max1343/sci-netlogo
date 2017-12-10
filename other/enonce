@@ -1,0 +1,108 @@
+Sauf erreur de ma part, vous avez récupéré le projet Axterix
+
+Quelques infos
+
+En ce qui concerne l'affectation des agents à des sommets, je suggère d'aller voir l'algorithme Hongrois ... référence quand on a n agents affectés à n sommets.
+https://fr.wikipedia.org/wiki/Algorithme_hongrois
+
+
+Sinon, Ci-joint quelques références d'articles.
+Je ne garantis pas que ce soit utile, mais jetez un peol quand même ;-)
+
+
+    - Forme décrite par les positions
+    Issue de l'article :
+    Behavior-based formation control for multirobot teams (ron-arkin) (1998)
+    http://ieeexplore.ieee.org/document/736776/
+    <http://ieeexplore.ieee.org/document/736776/>
+
+    La forme est définie  par la position des sommets.
+    Le but de chaque agent est de trouver un des sommets de la forme
+
+    3 manières différentes de régler ce problème
+
+    - On se base sur le centre de la forme pour calculer la position de
+    chaque agent.
+    - On définit un leader qui ne bouge pas et les autres se
+    positionnent par rapport à lui
+    - chaque agent se positionne par rapport à un des ses voisins  :
+      il doit trouver d'abord qui est son voisin puis calculer sa
+    position selon celui-ci
+
+    -------------------------------
+
+    - Forme décrite par les distances
+    Légèrement inspiree de :
+    Takagi-Sugeno Fuzzy formation control of nonholonomic robots (2016)
+    http://ieeexplore.ieee.org/document/7483157/
+    <http://ieeexplore.ieee.org/document/7483157/>
+
+    Chaque agent trouve son nouvelle position en fonction de la distance
+    qui le sépare des autre
+    Pour résoudre cela ils s'appuient sur des champs de potentiels
+
+    -----------------------
+    Forme décrite par des distances et des angles.
+
+    Issue de :
+    A Bearing-Only Pattern Formation Algorithm for Swarm Robotics (2016)
+
+https://scholar.google.fr/scholar?hl=en&as_sdt=0%2C5&q=A+Bearing-Only+Pattern+Formation+Algorithm+for+Swarm+Robotics&btnG=
+
+<https://scholar.google.fr/scholar?hl=en&as_sdt=0%2C5&q=A+Bearing-Only+Pattern+Formation+Algorithm+for+Swarm+Robotics&btnG=>
+
+    Pour former une forme comme un triangle, il suffit d'une distance et
+    deux angles ou de trois angles et un ratio.
+Philippe Mathieu <philippe.mathieu@univ-lille.fr>
+	
+25 oct.
+	
+À nicolas.croset., rb.malembeti, igor.axinti, Maxence, arthur.dazemar, marc.baloup, Veis, Antoine
+Pour info et lecture (20Mo)
+https://filesender.renater.fr/?s=download&token=3ae16919-ce5c-8061-0901-c4431e80f532
+
+Il y a surement bien d'autres "surveys" sur le sujet. Si vous en trouvez d'autres, n'hesitez pas à m'en faire part.
+
+PM
+Philippe Mathieu <philippe.mathieu@univ-lille1.fr>
+	
+12 nov.
+	
+À Philippe, nicolas.croset., rb.malembeti, igor.axinti, Maxence, arthur.dazemar, marc.baloup, Veis, Antoine
+Quelques réflexions complémentaires
+
+Il y a 3 manières de gérer la coordination entre agents dans une approche centrée-individus
+
+Niveau 1 (Centralisé) : un superviseur indique à chacun ce qu'il doit faire. Personne n'est autonome. Chacun reçoit des ordres du superviseur (chef). Dans votre cas, ce niveau est assez trivial : le superviseur affecte un point à chacun, soit au hasard, soit après avoir appliqué un algo Hongrois pour minimiser les distances). A priori ça devrait vous faire 2 versions netlogo.
+
+Niveau 2 (Blackboard) : Il n'y a pas d'agent centralisateur, mais uniquement une structure de données commune (on appelle un "tbaleau noir" ou "blackboard"), partagée par tous. Les agents sont autonomes dans leur raisonnement, ils décident, et lisent et inscrivent la connaissance dans le blackboard. Il existe donc 1 point critique : le blackboard.
+
+Niveau 3 (Swarm computing) : plus rien n'est centralisé, ni raisonnement ni structure de données. chacun a son propre raisonnement et son propre blackboard.
+
+Proposition de gestion des niveaux 2 et 3 (affectation non centralisée )
+
+Chaque robot possède un numéro unique qui permet de gérer les priorités (son identifiant par exemple). La règle partagée par tous (sorte d'axiome de départ) est simple : si deux robots rentrent en conflit, c'est celui qui a le numéro le plus élevé qui l'emporte.
+
+Chacun des robots cherche donc à rejoindre l'un des points de la forme, et en informe les autres quand il a choisi un point. Au niveau 2, un tableau d'affectation point/robot est partagé par tous (gobals en Netlogo), au niveau 3 chaque robot a son propre tableau d'affectation point/robot.
+
+Dans tous les cas
+
+- Quand un robot choisit un point, il prend un point qui n'a pas encore été pris par un supérieur à lui (il s'autorise à prendre un point d'un moins prioritaire). Il peut choisir un point au hasard ou en chercheant à minimiser son parcours.
+
+- Quand un robot reçoit un message d'affectation pour un point, si ce point a déjà été affecté à un autre, il ne conserve que l'identifiant du plus prioritaire.
+
+S'il reçoit un message qui le concerne, issu par quelqu'un de plus prioritaire, il sait alors qu'il doit recommencer sa recherche de cible.
+
+Cette technique permet notamment de laisser les robots prendre la parole dans un ordre quelconque.
+
+Ce qui devrait au moins vous faire 2 autres versions netlogo.
+
+V1: centralisé, points aléatoires
+
+V2: centralisé, minimisation de la distance
+
+V3 : blackboard, avec au choix point au hasard ou point le plus proche (ce qui, dans le cas général ne garantit pas comme dans la v2 la distance globale minimum).
+
+V4 : Swarm computing, avec au choix point au hasard ou point le plus proche
+
+etc ...
