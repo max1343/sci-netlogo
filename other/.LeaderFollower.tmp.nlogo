@@ -194,6 +194,7 @@ to setup
 
   let point-ids 0
   let point-id 0
+
   ask one-of robots [set point-ids setupHungarian]
 
   ask robots with [assigned = false] [
