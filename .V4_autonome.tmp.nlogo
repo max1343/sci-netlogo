@@ -1,154 +1,26 @@
-extensions [matrix]
 breed [robots robot]
 breed [points point]
-robots-own [assigned leader pointx pointy ciblex cibley id]
-points-own [assigned id]
+robots-own [assigned leader npoint pointx pointy ciblex cibley arrived grade vs]
+points-own [assigned num]
 
 ; leader        : booleen permettant de savoir qui est le leader
 ; pointx pointy : l'un des points de la shape qui lui a été affecté
 ; ciblex cibley : la position où il devra aller
 ; assigned      : indique s'il a déja une cible ou pas
+; arrived       : indique le nombre de voisins trouvés par le robot
+; npoint        : numéro du point affilié
+; num           : numéro d'un point
+; grade         : grade d'un soldat
 
-globals [taille
+globals [
+  moveX
+  moveY
+  dep
 ];
 
 to shuf
   ask robots [setxy random-pxcor random-pycor set leader false set assigned false set label-color white]
-  ask points [set color white]
   choix
-end
-
-to-report count-list [x l]
-  let nb-x 0
-  foreach l [ v -> if v = x [set nb-x (nb-x + 1)]]
-  report nb-x
-end
-
-
-to-report setupHungarian
-
- ;on crée la matrice de base pour le hongrois
- let m (matrix:make-constant taille taille 0)
-    ask points [
-      ask robots [
-        matrix:set m ([id] of myself) id (distance myself)
-      ]
-  ]
-
-  ;parcours des lignes (on retire le min à la ligne)
-   let minus-matrix (matrix:make-constant taille taille 0);
-  foreach (range taille) [ x ->
-    let min-of-row (min (matrix:get-row m x))
-    foreach (range taille) [ y ->
-      matrix:set minus-matrix x y (min-of-row)
-    ]
-  ]
-  set m (m matrix:- minus-matrix)
-
- ;parcours des colonnes (on retire le min de la colonne)
-  foreach (range taille) [ y ->
-    let min-of-col (min (matrix:get-column m y))
-    foreach (range taille) [ x ->
-      matrix:set minus-matrix x y (min-of-col)
-    ]
-  ]
-  set m (m matrix:- minus-matrix)
-
-  while [true] [
-    ;-1 = zéro encadré, -2 = zéro barré
-    ;Phase 1
-    let continue true
-    while [continue] [
-      let nb-zero-per-row (map [l ->  ifelse-value ((count-list 0 l) = 0) [100000] [count-list 0 l] ] (matrix:to-row-list m))
-      let line-with-less-zero (position (min nb-zero-per-row) nb-zero-per-row)
-      ifelse min nb-zero-per-row = 100000
-      [set continue false]
-      [
-        ;On encadre un des zéros de cette ligne
-        let zero-y (position 0 ((matrix:get-row m line-with-less-zero)))
-        matrix:set m line-with-less-zero zero-y -1
-        ;On  barre  tous  les  zéros  se  trouvant  sur  la  même  ligne  ou  sur  la  même  colonne  que  le  zéro encadré
-        foreach (range (taille)) [ x ->
-          if matrix:get m line-with-less-zero x = 0 [matrix:set m line-with-less-zero x -2]
-          if matrix:get m x zero-y = 0 [matrix:set m x zero-y -2]
-        ]
-      ]
-    ]
-
-    ; Si l'on a encadré un zéro par ligne et par colonne -> terminé
-    let nb-zero 0
-    foreach (matrix:to-row-list m) [ l -> set nb-zero (nb-zero + (count-list -1 l))]
-    ifelse (nb-zero = taille)
-    [
-      report (map [robot-id -> position -1 (matrix:get-column m robot-id)] (range taille))
-    ]
-    [
-      ;Phase 2
-      let marked-row []
-      foreach (range taille) [ row-id -> if (not (member? -1 (matrix:get-row m row-id))) [set marked-row (fput row-id marked-row)]]
-
-      let marked marked-row != []
-      let marked-col []
-
-
-      while [marked] [
-        set marked false
-        foreach (range taille) [ col-id ->
-          foreach marked-row [ row-id ->
-            if matrix:get m row-id col-id = -2 and (not (member? col-id marked-col)) [
-              set marked-col (fput col-id marked-col)
-              set marked true
-            ]
-          ]
-        ]
-        foreach (range taille) [ row-id ->
-          foreach marked-col [ col-id ->
-            if matrix:get m row-id col-id = -1 and (not (member? row-id marked-row))[
-              set marked-row (fput row-id marked-row)
-              set marked true
-            ]
-          ]
-        ]
-      ]
-      ;On trace alors un trait sur toute ligne non marquée et sur toute colonne marquée
-      let dashed-col marked-col
-      let undashed-col []
-      foreach (range taille) [ y -> if not member? y marked-col [set undashed-col (fput y undashed-col)]]
-      let dashed-row []
-      foreach (range taille) [ x -> if not member? x marked-row [set dashed-row (fput x dashed-row)]]
-      let undashed-row marked-row
-
-      ;Phase 3
-       foreach (range taille) [ x ->
-        foreach (range taille) [ y ->
-          if (matrix:get m x y) < 0 [matrix:set m x y 0]
-        ]
-      ]
-
-      let min-elem 1000000
-      foreach undashed-col [ y ->
-        foreach undashed-row [x ->
-          let elem (matrix:get m x y)
-          if elem >= 0 and elem < min-elem [set min-elem elem]
-        ]
-      ]
-      ;print min-elem
-      foreach undashed-col [y ->
-        foreach undashed-row [x ->
-          let elem (matrix:get m x y)
-          matrix:set m x y (elem - min-elem)
-        ]
-      ]
-      ;On ajoute ce même élément à toutes les cases du tableau initial barrées deux fois
-      foreach dashed-col [y ->
-        foreach dashed-row [x ->
-          let elem (matrix:get m x y)
-          matrix:set m x y (elem + min-elem)
-        ]
-      ]
-      ;print matrix:pretty-print-text m
-    ]
-]
 end
 
 
@@ -158,98 +30,166 @@ to setup
   reset-ticks
 
   ; creation de la forme (shape)
-   ifelse (forms = "carre") [
-    create-points 2 [set shape "square"  set assigned false set id who set color white setxy (who * scale) (who * scale) set id -1]
-    create-points 1 [set shape "square"  set assigned false set id 2 set color white setxy (scale) (0) set id -1]
-    create-points 1 [set shape "square"  set assigned false set id 3 set color white setxy (0) (scale) set id -1]
+   if (forms = "carre") [
+    create-points 2 [set shape "square"  set assigned false set color black setxy (who * scale) (who * scale) set num who]
+    create-points 1 [set shape "square"  set assigned false set color black setxy (scale) (0) set num who]
+    create-points 1 [set shape "square"  set assigned false set color black setxy (0) (scale) set num who]
 
-  ; creation des robots
-  create-robots 4 [setxy random-pxcor random-pycor set leader false set assigned false set id -1]
-  ask robots [set label who]
-    set taille 4
-  ]
-  [
-    create-points 3 [set shape "circle"  set assigned false set id who set color white setxy (who * scale) (who * scale) set id -1]
     ; creation des robots
-    create-robots 3 [setxy random-pxcor random-pycor set leader false set assigned false set id -1]
+    create-robots 4 [setxy random-pxcor random-pycor set color white set leader false set assigned false set arrived false set grade (random 7)]
     ask robots [set label who]
-    set taille 3
+  ]
+   if (forms = "triangle") [
+    create-points 1 [set shape "square"  set assigned false set color black setxy (- scale) (0)]
+    create-points 1 [set shape "square"  set assigned false set color black setxy (scale) (0)]
+    create-points 1 [set shape "square"  set assigned false set color black setxy (0) (scale)]
+    create-robots 3 [setxy random-pxcor random-pycor set leader false set color white set assigned false set arrived false set grade (random 7)]
+    ask robots [set label who]
+  ]
+    if (forms = "ligne")[
+    create-points 3 [set shape "circle"  set assigned false set color white setxy (who * scale) (who * scale)]
+    ; creation des robots
+    create-robots 3 [setxy random-pxcor random-pycor set leader false set assigned false]
+    ask robots [set label who]
+  ]
+  if(forms = "fleche")[
+    create-points 4 [set shape "circle"  set assigned false set color white setxy (who * scale) (0)]
+    create-points 1 [set shape "circle"  set assigned false set color white setxy (2 * scale) (- 7)]
+    create-points 1 [set shape "circle"  set assigned false set color white setxy (2 * scale) (7)]
+    create-points 1 [set shape "circle"  set assigned false set color white setxy (2.5 * scale) (3)]
+    create-points 1 [set shape "circle"  set assigned false set color white setxy (2.5 * scale) (- 3)]
+    create-robots 8 [setxy random-pxcor random-pycor set leader false set assigned false]
+    ask robots [set label who]
   ]
 
-  let i 0
-  while [any? robots with [id = -1]]
-  [
-    ask one-of robots with [id = -1] [set id i]
-    set i i + 1
-  ]
-  set i 0
-  while [any? points with [id = -1]]
-  [
-    ask one-of points with [id = -1] [set id i]
-    set i i + 1
-]
-
-  let point-ids 0
-  let point-id 0
-  ask one-of robots [set point-ids setupHungarian]
-
-  ask robots with [assigned = false] [
-      set point-id item label point-ids
-      let p (one-of (points with[label = item label point-id]))
-         set pointx ([xcor] of p)
-         set pointY ([ycor] of p)
-         set assigned true
-      ask p [set assigned true]
-  ]
-  ;choix
-  ask robots
-  [
-     set ciblex  ([pointx] of self)
-     set cibley  ([pointy] of self)
-  ]
+  choix
 end
 
 to choix
-  ; choix d'un leader. le leader ne bouge pas !
+ ; Calcul des cibles
+ ; les robots prennent leurs positions
 
-  ask one-of robots [set leader true set label-color red
-                     ;  on colore la cible du leader
-                     ask (points with [xcor = ([pointx] of myself) and ycor = ([pointy] of myself)]) [set color red]
-                    ]
-  ; Calcul des cibles
-
-  ; Il n'y a qu'un leader; le leader ne bouge pas
-  let lead (one-of robots with [leader = true])
-  ask lead
+  ; affectation (assignment) des points aux robots
+  while [any? robots with [assigned = false]]
   [
-      set ciblex  [xcor] of self
-      set cibley  [ycor] of self
-      setxy ciblex cibley
+    ; on affecte un point au hasard à un robot au hasard
+    ; il faut exactement le même nombre de points que de robots
+    ask one-of robots with [assigned = false]
+    [
+      let p one-of points with [assigned = false]
+      set pointx ([xcor] of p)
+      set pointY ([ycor] of p)
+      set npoint ([num] of p)
+      set assigned true          ; ce robot est affecte
+      ;print "hello"
+    ]
   ]
-
-  ; les autres non leader prennent leurs positions
-  ask robots with [leader = false]
+  ask robots
   [
-     set ciblex  ([xcor] of lead  - [pointx] of lead + [pointx] of self)
-     set cibley  ([ycor] of lead  - [pointy] of lead + [pointy] of self)
+     set ciblex  [pointx] of self
+     set cibley  [pointy] of self
   ]
 end
 
+to move
+  clean
+  set moveX random 40
+  set moveY random 30
+  set moveX (moveX - 20)
+  set moveY (moveY - 15)
+
+  ask robots
+  [
+     set ciblex (ciblex + moveX)
+     set cibley (cibley + moveY)
+  ]
+  go
+end
+
+to clean
+  ask robots [
+    set label-color white
+    set leader false
+  ]
+end
+
+to haut
+  set dep 3
+  let movement 0
+  ask robots [
+    set ciblex ciblex
+    set cibley (cibley + dep)
+  ]
+  go
+end
+
+
+to bas
+  ask robots [
+    set ciblex ciblex
+    set cibley (cibley - dep)
+  ]
+  go
+end
+
+to gauche
+  ask robots [
+    set cibley cibley
+    set ciblex (ciblex - dep)
+  ]
+  go
+end
+
+
+to droite
+  ask robots [
+    set cibley cibley
+    set ciblex (ciblex + dep)
+  ]
+  go
+end
+
+
 to go
+  let boolean false
   ask robots [facexy ciblex cibley]
-  ask robots [ ifelse ((distancexy ciblex cibley) > 0.5) [fd speed][setxy ciblex cibley set label-color green] ]
-  if (all? robots [xcor = ciblex and ycor = cibley]) [stop]
+  ask robots [
+    if(arrived = false)[
+      ifelse ((distancexy ciblex cibley) > 0.5)
+      [fd speed]
+      [setxy ciblex cibley set label-color yellow
+        ask one-of points with [(num = [npoint] of myself)][
+          set assigned true
+        ]
+        set arrived true
+      ]
+
+      ask points with [(num = [npoint] of myself)]
+      [
+        if (assigned = true)
+        [
+          set boolean true
+        ]
+      ]
+      if boolean = true[
+        set assigned false
+        set boolean false
+      ]
+      choix
+    ]
+  ]
+  if (all? robots [xcor = ciblex and ycor = cibley]) [stop clean]
   tick
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
 229
 14
-1042
-478
+984
+445
 -1
 -1
-5.0
+4.64
 1
 10
 1
@@ -271,9 +211,9 @@ ticks
 
 BUTTON
 316
-492
+497
 380
-525
+530
 Setup
 setup
 NIL
@@ -322,10 +262,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot sum [distancexy ciblex cibley] of robots"
 
 MONITOR
-53
-449
-168
-494
+39
+423
+154
+468
 sum distances
 sum [distancexy ciblex cibley] of robots
 17
@@ -341,20 +281,20 @@ speed
 speed
 0
 2
-0.0
+0.3
 0.1
 1
 NIL
 HORIZONTAL
 
 CHOOSER
-557
-508
-695
-553
+32
+482
+170
+527
 forms
 forms
-"carre" "ligne"
+"carre" "triangle" "fleche" "ligne"
 0
 
 SLIDER
@@ -366,7 +306,7 @@ scale
 scale
 1
 23
-0.0
+8.0
 1
 1
 NIL
@@ -385,6 +325,91 @@ T
 OBSERVER
 NIL
 NIL
+NIL
+NIL
+1
+
+BUTTON
+224
+498
+294
+531
+move
+move
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+583
+455
+648
+488
+NIL
+haut
+NIL
+1
+T
+OBSERVER
+NIL
+Z
+NIL
+NIL
+1
+
+BUTTON
+578
+522
+648
+555
+NIL
+bas
+NIL
+1
+T
+OBSERVER
+NIL
+S
+NIL
+NIL
+1
+
+BUTTON
+496
+487
+582
+520
+NIL
+gauche
+NIL
+1
+T
+OBSERVER
+NIL
+Q
+NIL
+NIL
+1
+
+BUTTON
+650
+490
+724
+523
+NIL
+droite
+NIL
+1
+T
+OBSERVER
+NIL
+D
 NIL
 NIL
 1
