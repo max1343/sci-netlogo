@@ -93,10 +93,8 @@ end
 
 to move
   clean
-  set moveX random 40
-  set moveY random 30
-  set moveX (moveX - 20)
-  set moveY (moveY - 15)
+  set moveX random 10
+  set moveY random 10
 
   ask robots
   [

@@ -1,28 +1,25 @@
 breed [robots robot]
 breed [points point]
-robots-own [assigned leader npoint pointx pointy ciblex cibley arrived grade vs]
-points-own [assigned num]
+robots-own [assigned leader pointx pointy ciblex cibley]
+points-own [assigned]
 
 ; leader        : booleen permettant de savoir qui est le leader
 ; pointx pointy : l'un des points de la shape qui lui a été affecté
 ; ciblex cibley : la position où il devra aller
 ; assigned      : indique s'il a déja une cible ou pas
-; arrived       : indique le nombre de voisins trouvés par le robot
-; npoint        : numéro du point affilié
-; num           : numéro d'un point
-; grade         : grade d'un soldat
 
 globals [
   moveX
   moveY
+  alt
   dep
 ];
 
 to shuf
   ask robots [setxy random-pxcor random-pycor set leader false set assigned false set label-color white]
+  ask points [set color white]
   choix
 end
-
 
 
 to setup
@@ -31,22 +28,14 @@ to setup
 
   ; creation de la forme (shape)
    if (forms = "carre") [
-    create-points 2 [set shape "square"  set assigned false set color black setxy (who * scale) (who * scale) set num who]
-    create-points 1 [set shape "square"  set assigned false set color black setxy (scale) (0) set num who]
-    create-points 1 [set shape "square"  set assigned false set color black setxy (0) (scale) set num who]
-
+    create-points 2 [set shape "square"  set assigned false set color white setxy (who * scale) (who * scale)]
+    create-points 1 [set shape "square"  set assigned false set color white setxy (scale) (0)]
+    create-points 1 [set shape "square"  set assigned false set color white setxy (0) (scale)]
     ; creation des robots
-    create-robots 4 [setxy random-pxcor random-pycor set color white set leader false set assigned false set arrived false set grade (random 7)]
+    create-robots 4 [setxy random-pxcor random-pycor set leader false set assigned false]
     ask robots [set label who]
   ]
-   if (forms = "triangle") [
-    create-points 1 [set shape "square"  set assigned false set color black setxy (- scale) (0)]
-    create-points 1 [set shape "square"  set assigned false set color black setxy (scale) (0)]
-    create-points 1 [set shape "square"  set assigned false set color black setxy (0) (scale)]
-    create-robots 3 [setxy random-pxcor random-pycor set leader false set color white set assigned false set arrived false set grade (random 7)]
-    ask robots [set label who]
-  ]
-    if (forms = "ligne")[
+  if (forms = "ligne")[
     create-points 3 [set shape "circle"  set assigned false set color white setxy (who * scale) (who * scale)]
     ; creation des robots
     create-robots 3 [setxy random-pxcor random-pycor set leader false set assigned false]
@@ -61,13 +50,13 @@ to setup
     create-robots 8 [setxy random-pxcor random-pycor set leader false set assigned false]
     ask robots [set label who]
   ]
-
-  choix
-end
-
-to choix
- ; Calcul des cibles
- ; les robots prennent leurs positions
+   if (forms = "triangle") [
+    create-points 1 [set shape "square"  set assigned false set color white setxy (- scale) (0)]
+    create-points 1 [set shape "square"  set assigned false set color white setxy (scale) (0)]
+    create-points 1 [set shape "square"  set assigned false set color white setxy (0) (scale)]
+    create-robots 3 [setxy random-pxcor random-pycor set leader false set assigned false]
+    ask robots [set label who]
+  ]
 
   ; affectation (assignment) des points aux robots
   while [any? robots with [assigned = false]]
@@ -76,42 +65,48 @@ to choix
     ; il faut exactement le même nombre de points que de robots
     ask one-of robots with [assigned = false]
     [
-      let p one-of points with [assigned = false]
+      let p one-of points with[assigned = false]
       set pointx ([xcor] of p)
       set pointY ([ycor] of p)
-      set npoint ([num] of p)
       set assigned true          ; ce robot est affecte
+      ask p [set assigned true]  ; ce point est affecte
       ;print "hello"
     ]
   ]
-  ask robots
+  set alt 0
+  choix
+end
+
+to choix
+  ; choix d'un leader. le leader ne bouge pas !
+  ask one-of robots [
+    set leader true set label-color red
+    ;  on colore la cible du leader
+    ask (points with [xcor = ([pointx] of myself) and ycor = ([pointy] of myself)]) [set color red]
+  ]
+  ; Calcul des cibles
+
+  ; Il n'y a qu'un leader; le leader ne bouge pas
+  let lead (one-of robots with [leader = true])
+  ask lead
   [
-     set ciblex  [pointx] of self
-     set cibley  [pointy] of self
+      set ciblex  [xcor] of self
+      set cibley  [ycor] of self
+      setxy ciblex cibley
+  ]
+
+  ; les autres non leader prennent leurs positions
+  ask robots with [leader = false]
+  [
+     set ciblex  ([xcor] of lead  - [pointx] of lead + [pointx] of self)
+     set cibley  ([ycor] of lead  - [pointy] of lead + [pointy] of self)
   ]
 end
 
 to move
-  clean
-  set moveX random 40
-  set moveY random 30
-  set moveX (moveX - 20)
-  set moveY (moveY - 15)
-
-  ask robots
-  [
-     set ciblex (ciblex + moveX)
-     set cibley (cibley + moveY)
-  ]
-  go
+ ask robots [set heading 10 fd 1]
 end
 
-to clean
-  ask robots [
-    set label-color white
-    set leader false
-  ]
-end
 
 to haut
   set dep 3
@@ -151,34 +146,9 @@ end
 
 
 to go
-  let boolean false
   ask robots [facexy ciblex cibley]
-  ask robots [
-    if(arrived = false)[
-      ifelse ((distancexy ciblex cibley) > 0.5)
-      [fd speed]
-      [setxy ciblex cibley set label-color yellow
-        ask one-of points with [(num = [npoint] of myself)][
-          set assigned true
-        ]
-        set arrived true
-      ]
-
-      ask points with [(num = [npoint] of myself)]
-      [
-        if (assigned = true)
-        [
-          set boolean true
-        ]
-      ]
-      if boolean = true[
-        set assigned false
-        set boolean false
-      ]
-      choix
-    ]
-  ]
-  if (all? robots [xcor = ciblex and ycor = cibley]) [stop clean]
+  ask robots [ ifelse ((distancexy ciblex cibley) > 0.5) [fd speed][setxy ciblex cibley set label-color green] ]
+  if (all? robots [xcor = ciblex and ycor = cibley]) [stop]
   tick
 end
 @#$#@#$#@
@@ -196,8 +166,8 @@ GRAPHICS-WINDOW
 1
 1
 0
-0
-0
+1
+1
 1
 -80
 80
@@ -262,10 +232,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot sum [distancexy ciblex cibley] of robots"
 
 MONITOR
-39
-423
-154
-468
+53
+449
+168
+494
 sum distances
 sum [distancexy ciblex cibley] of robots
 17
@@ -281,21 +251,21 @@ speed
 speed
 0
 2
-0.3
+0.1
 0.1
 1
 NIL
 HORIZONTAL
 
 CHOOSER
-32
-482
-170
-527
+38
+506
+176
+551
 forms
 forms
-"carre" "triangle" "fleche" "ligne"
-0
+"carre" "ligne" "fleche" "triangle"
+2
 
 SLIDER
 11
@@ -306,7 +276,7 @@ scale
 scale
 1
 23
-8.0
+6.0
 1
 1
 NIL
@@ -336,7 +306,7 @@ BUTTON
 531
 move
 move
-NIL
+T
 1
 T
 OBSERVER
@@ -413,6 +383,21 @@ D
 NIL
 NIL
 1
+
+SLIDER
+224
+545
+396
+578
+direction
+direction
+0
+50
+50.0
+2
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
