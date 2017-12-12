@@ -162,32 +162,26 @@ end
 
 
 to go
-  let boolean false
+  let isAssigned false
   ask robots [facexy ciblex cibley]
   ask robots [
     if(arrived = false)[
       ifelse ((distancexy ciblex cibley) > 0.5)
-      [fd speed]
-      [setxy ciblex cibley set label-color yellow
-        ask one-of points with [(num = [npoint] of myself)][
-          set assigned true
-        ]
-        set arrived true
-      ]
+          [fd speed]
+          [
+            if(other robots-here = true)[
+               ask robots-here [ set isAssigned arrived ]
+            ]
 
-      ask points with [(num = [npoint] of myself)]
-      [
-        if (assigned = true)
-        [
-          set boolean true
-        ]
-      ]
-      if boolean = true[
-        set assigned false
-        set boolean false
-      ]
-      choix
-    ]
+          ifelse(isAssigned = false)
+          [setxy ciblex cibley set label-color yellow set arrived true]
+          [let p one-of points
+           set pointx ([xcor] of p)
+           set pointY ([ycor] of p)
+          ]
+         ]
+
+     ]
   ]
   if (all? robots [xcor = ciblex and ycor = cibley]) [stop clean]
   tick
@@ -306,7 +300,7 @@ CHOOSER
 forms
 forms
 "carre" "triangle" "fleche" "ligne"
-0
+1
 
 SLIDER
 11

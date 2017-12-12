@@ -85,11 +85,11 @@ to-report setupHungarian
     [
       ;Phase 2
       let marked-row []
+      ;on vérifie chaque ligne pour savoir si une valeur est marquée (-1)
       foreach (range taille) [ row-id -> if (not (member? -1 (matrix:get-row m row-id))) [set marked-row (fput row-id marked-row)]]
 
       let marked marked-row != []
       let marked-col []
-
 
       while [marked] [
         set marked false
