@@ -1,22 +1,22 @@
+extensions [array]
 breed [robots robot]
 breed [points point]
-robots-own [assigned leader pointx pointy ciblex cibley]
+robots-own [assigned said leader pointx pointy ciblex cibley]
 points-own [assigned]
 
 ; leader        : booleen permettant de savoir qui est le leader
 ; pointx pointy : l'un des points de la shape qui lui a été affecté
 ; ciblex cibley : la position où il devra aller
 ; assigned      : indique s'il a déja une cible ou pas
+; said          : indique s'il a donné sa position au blackboard
 
 globals [
   moveX
   moveY
-  alt
-  dep
 ];
 
 to shuf
-  ask robots [setxy random-pxcor random-pycor set leader false set assigned false set label-color white]
+  ask robots [setxy random-pxcor random-pycor set said false set leader false set assigned false set label-color white]
   ask points [set color white]
   choix
 end
@@ -32,13 +32,13 @@ to setup
     create-points 1 [set shape "square"  set assigned false set color white setxy (scale) (0)]
     create-points 1 [set shape "square"  set assigned false set color white setxy (0) (scale)]
     ; creation des robots
-    create-robots 4 [setxy random-pxcor random-pycor set leader false set assigned false]
+    create-robots 4 [setxy random-pxcor random-pycor set leader false set assigned false set said false]
     ask robots [set label who]
   ]
   if (forms = "ligne")[
     create-points 3 [set shape "circle"  set assigned false set color white setxy (who * scale) (who * scale)]
     ; creation des robots
-    create-robots 3 [setxy random-pxcor random-pycor set leader false set assigned false]
+    create-robots 3 [setxy random-pxcor random-pycor set leader false set assigned false set said false]
     ask robots [set label who]
   ]
   if(forms = "fleche")[
@@ -47,16 +47,17 @@ to setup
     create-points 1 [set shape "circle"  set assigned false set color white setxy (2 * scale) (7)]
     create-points 1 [set shape "circle"  set assigned false set color white setxy (2.5 * scale) (3)]
     create-points 1 [set shape "circle"  set assigned false set color white setxy (2.5 * scale) (- 3)]
-    create-robots 8 [setxy random-pxcor random-pycor set leader false set assigned false]
+    create-robots 8 [setxy random-pxcor random-pycor set leader false set assigned false set said false]
     ask robots [set label who]
   ]
    if (forms = "triangle") [
     create-points 1 [set shape "square"  set assigned false set color white setxy (- scale) (0)]
     create-points 1 [set shape "square"  set assigned false set color white setxy (scale) (0)]
     create-points 1 [set shape "square"  set assigned false set color white setxy (0) (scale)]
-    create-robots 3 [setxy random-pxcor random-pycor set leader false set assigned false]
+    create-robots 3 [setxy random-pxcor random-pycor set leader false set assigned false set said false]
     ask robots [set label who]
   ]
+
 
   ; affectation (assignment) des points aux robots
   while [any? robots with [assigned = false]]
@@ -73,76 +74,59 @@ to setup
       ;print "hello"
     ]
   ]
-  set alt 0
   choix
 end
 
 to choix
   ; choix d'un leader. le leader ne bouge pas !
-  ask one-of robots [
-    set leader true set label-color red
-    ;  on colore la cible du leader
-    ask (points with [xcor = ([pointx] of myself) and ycor = ([pointy] of myself)]) [set color red]
-  ]
-  ; Calcul des cibles
+  let nb 0
+  let blackboard-x 0
+  let blackboard-y 0
 
-  ; Il n'y a qu'un leader; le leader ne bouge pas
-  let lead (one-of robots with [leader = true])
-  ask lead
+  while [any? robots with  [said = false]]
+    [
+      let r one-of robots with[said = false]
+      set blackboard-x blackboard-x + [xcor] of r
+      set blackboard-y blackboard-y + [ycor] of r
+      set nb nb + 1
+      ask r [set said true]
+
+     ]
+  let baryX (blackboard-x / nb)
+  let baryY (blackboard-y / nb)
+
+  ask robots
   [
-      set ciblex  [xcor] of self
-      set cibley  [ycor] of self
-      setxy ciblex cibley
+    set ciblex baryX + [pointx] of self
+    set cibley baryY + [pointy] of self
   ]
 
-  ; les autres non leader prennent leurs positions
-  ask robots with [leader = false]
-  [
-     set ciblex  ([xcor] of lead  - [pointx] of lead + [pointx] of self)
-     set cibley  ([ycor] of lead  - [pointy] of lead + [pointy] of self)
-  ]
 end
 
 to move
- ask robots [set heading 10 fd 1]
-end
-
-
-to haut
-  set dep 3
-  let movement 0
-  ask robots [
-    set ciblex ciblex
-    set cibley (cibley + dep)
+  set moveX random 160
+  set moveY random 90
+  ask one-of robots[
+    set leader true
+  ]
+  let lead (one-of robots with [leader = true])
+  ask lead
+  [
+    set ciblex (moveX - 80)
+    set cibley (moveY - 45)
+    set label-color white
+  ]
+    ask robots with [leader = false]
+  [
+     set ciblex  ([ciblex] of lead  - [pointx] of lead + [pointx] of self)
+     set cibley  ([cibley] of lead  - [pointy] of lead + [pointy] of self)
+     set label-color white
   ]
   go
 end
 
 
-to bas
-  ask robots [
-    set ciblex ciblex
-    set cibley (cibley - dep)
-  ]
-  go
-end
 
-to gauche
-  ask robots [
-    set cibley cibley
-    set ciblex (ciblex - dep)
-  ]
-  go
-end
-
-
-to droite
-  ask robots [
-    set cibley cibley
-    set ciblex (ciblex + dep)
-  ]
-  go
-end
 
 
 to go
@@ -155,19 +139,19 @@ end
 GRAPHICS-WINDOW
 229
 14
-984
-445
+1042
+478
 -1
 -1
-4.64
+5.0
 1
 10
 1
 1
 1
 0
-1
-1
+0
+0
 1
 -80
 80
@@ -258,10 +242,10 @@ NIL
 HORIZONTAL
 
 CHOOSER
-38
-506
-176
-551
+557
+508
+695
+553
 forms
 forms
 "carre" "ligne" "fleche" "triangle"
@@ -306,98 +290,15 @@ BUTTON
 531
 move
 move
-T
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-583
-455
-648
-488
-NIL
-haut
 NIL
 1
 T
 OBSERVER
 NIL
-Z
 NIL
-NIL
-1
-
-BUTTON
-578
-522
-648
-555
-NIL
-bas
-NIL
-1
-T
-OBSERVER
-NIL
-S
 NIL
 NIL
 1
-
-BUTTON
-496
-487
-582
-520
-NIL
-gauche
-NIL
-1
-T
-OBSERVER
-NIL
-Q
-NIL
-NIL
-1
-
-BUTTON
-650
-490
-724
-523
-NIL
-droite
-NIL
-1
-T
-OBSERVER
-NIL
-D
-NIL
-NIL
-1
-
-SLIDER
-224
-545
-396
-578
-direction
-direction
-0
-50
-50.0
-2
-1
-NIL
-HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?

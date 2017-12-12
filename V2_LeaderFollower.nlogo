@@ -235,6 +235,10 @@ to choix
   ]
 end
 
+to move
+ ask robots [set heading direction fd 1]
+end
+
 to go
   ask robots [facexy ciblex cibley]
   ask robots [ ifelse ((distancexy ciblex cibley) > 0.5) [fd speed][setxy ciblex cibley set label-color green] ]
@@ -303,24 +307,6 @@ NIL
 NIL
 1
 
-PLOT
-5
-267
-205
-417
-plot 1
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot sum [distancexy ciblex cibley] of robots"
-
 MONITOR
 53
 449
@@ -388,6 +374,39 @@ NIL
 NIL
 NIL
 1
+
+PLOT
+5
+267
+205
+417
+plot 1
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot sum [distancexy ciblex cibley] of robots"
+
+SLIDER
+28
+504
+200
+537
+direction
+direction
+-180
+180
+10.0
+10
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?

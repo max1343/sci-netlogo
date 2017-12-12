@@ -56,6 +56,21 @@ to setup
     create-robots 3 [setxy random-pxcor random-pycor set leader false set assigned false]
     ask robots [set label who]
   ]
+  if(forms = "big")[
+   create-points 2 [set shape "circle"  set assigned false set color white setxy (who * scale) (who * scale)]
+   create-points 1 [set shape "circle"  set assigned false set color white setxy (scale) (0)]
+   create-points 1 [set shape "circle"  set assigned false set color white setxy (0) (scale) ]
+   create-points 5 [set shape "circle"  set assigned false set color white setxy (3 * who) (3 * who)]
+    create-points 1 [set shape "square"  set assigned false set color white setxy (- scale) (-4)]
+    create-points 1 [set shape "square"  set assigned false set color white setxy (scale) (-4)]
+    create-points 1 [set shape "square"  set assigned false set color white setxy (-4) (scale)]
+
+    ; creation des robots
+    create-robots 12 [setxy random-pxcor random-pycor set color white set leader false set assigned false]
+    ask robots [set label who]
+  ]
+
+
 
   ; affectation (assignment) des points aux robots
   while [any? robots with [assigned = false]]
@@ -84,7 +99,7 @@ to choix
   ]
 end
 
-to move
+to move2
   clean
   set moveX random 40
   set moveY random 30
@@ -97,6 +112,10 @@ to move
      set cibley (cibley + moveY)
   ]
   go
+end
+
+to move
+ ask robots [set heading direction fd 1]
 end
 
 to clean
@@ -164,8 +183,8 @@ GRAPHICS-WINDOW
 1
 1
 0
-0
-0
+1
+1
 1
 -80
 80
@@ -262,8 +281,8 @@ CHOOSER
 551
 forms
 forms
-"carre" "ligne" "fleche" "triangle"
-2
+"carre" "ligne" "fleche" "triangle" "big"
+4
 
 SLIDER
 11
@@ -304,7 +323,7 @@ BUTTON
 531
 move
 move
-NIL
+T
 1
 T
 OBSERVER
@@ -381,6 +400,21 @@ D
 NIL
 NIL
 1
+
+SLIDER
+22
+29
+194
+62
+direction
+direction
+-180
+180
+-10.0
+10
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
