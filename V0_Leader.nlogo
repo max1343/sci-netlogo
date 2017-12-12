@@ -57,6 +57,19 @@ to setup
     create-robots 3 [setxy random-pxcor random-pycor set leader false set assigned false]
     ask robots [set label who]
   ]
+  if(forms = "big")[
+   create-points 2 [set shape "circle"  set assigned false set color white setxy (who * scale) (who * scale)]
+   create-points 1 [set shape "circle"  set assigned false set color white setxy (scale) (0)]
+   create-points 1 [set shape "circle"  set assigned false set color white setxy (0) (scale) ]
+   create-points 5 [set shape "circle"  set assigned false set color white setxy (3 * who) (3 * who)]
+    create-points 1 [set shape "square"  set assigned false set color white setxy (- scale) (-4)]
+    create-points 1 [set shape "square"  set assigned false set color white setxy (scale) (-4)]
+    create-points 1 [set shape "square"  set assigned false set color white setxy (-4) (scale)]
+
+    ; creation des robots
+    create-robots 12 [setxy random-pxcor random-pycor set color white set leader false set assigned false]
+    ask robots [set label who]
+  ]
 
   ; affectation (assignment) des points aux robots
   while [any? robots with [assigned = false]]
@@ -264,8 +277,8 @@ CHOOSER
 551
 forms
 forms
-"carre" "ligne" "fleche" "triangle"
-2
+"carre" "ligne" "fleche" "triangle" "big"
+4
 
 SLIDER
 11
@@ -391,9 +404,9 @@ SLIDER
 578
 direction
 direction
--90
-90
--90.0
+-180
+180
+0.0
 10
 1
 NIL

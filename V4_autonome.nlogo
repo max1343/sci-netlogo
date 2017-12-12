@@ -61,6 +61,19 @@ to setup
     create-robots 8 [setxy random-pxcor random-pycor set leader false set assigned false set arrived false]
     ask robots [set label who]
   ]
+ if(forms = "big")[
+   create-points 2 [set shape "circle"  set assigned false set color white setxy (who * scale) (who * scale) set num who]
+   create-points 1 [set shape "circle"  set assigned false set color white setxy (scale) (0) set num who]
+   create-points 1 [set shape "circle"  set assigned false set color white setxy (0) (scale) set num who]
+   create-points 5 [set shape "circle"  set assigned false set color white setxy (3 * who) (3 * who)]
+    create-points 1 [set shape "square"  set assigned false set color white setxy (- scale) (-4)]
+    create-points 1 [set shape "square"  set assigned false set color white setxy (scale) (-4)]
+    create-points 1 [set shape "square"  set assigned false set color white setxy (-4) (scale)]
+
+    ; creation des robots
+    create-robots 12 [setxy random-pxcor random-pycor set color white set leader false set assigned false set arrived false set grade (random 7)]
+    ask robots [set label who]
+  ]
 
   choix
 end
