@@ -104,22 +104,7 @@ to choix
 end
 
 to move
-  set moveX random 160
-  set moveY random 90
-  let lead (one-of robots with [leader = true])
-  ask lead
-  [
-    set ciblex (moveX - 80)
-    set cibley (moveY - 45)
-    set label-color white
-  ]
-    ask robots with [leader = false]
-  [
-     set ciblex  ([ciblex] of lead  - [pointx] of lead + [pointx] of self)
-     set cibley  ([cibley] of lead  - [pointy] of lead + [pointy] of self)
-     set label-color white
-  ]
-  go
+ ask robots [set heading 10 fd 1]
 end
 
 
@@ -181,8 +166,8 @@ GRAPHICS-WINDOW
 1
 1
 0
-0
-0
+1
+1
 1
 -80
 80
@@ -321,7 +306,7 @@ BUTTON
 531
 move
 move
-NIL
+T
 1
 T
 OBSERVER
@@ -398,6 +383,21 @@ D
 NIL
 NIL
 1
+
+SLIDER
+224
+545
+396
+578
+direction
+direction
+0
+50
+50.0
+2
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
