@@ -16,10 +16,12 @@ globals [
   moveX
   moveY
   dep
+  dir
 ];
 
+
 to shuf
-  ask robots [setxy random-pxcor random-pycor set leader false set arrived false set label-color white]
+  ask robots [setxy random-pxcor random-pycor set leader false set arrived false set color white]
   ;choix
 end
 
@@ -28,6 +30,7 @@ end
 to setup
   ca
   reset-ticks
+
 
   ; creation de la forme (shape)
    if (forms = "carre") [
@@ -61,20 +64,21 @@ to setup
     create-robots 8 [setxy random-pxcor random-pycor set leader false set assigned false set arrived false]
     ask robots [set label who]
   ]
- if(forms = "big")[
-   create-points 2 [set shape "circle"  set assigned false set color white setxy (who * scale) (who * scale) set num who]
-   create-points 1 [set shape "circle"  set assigned false set color white setxy (scale) (0) set num who]
-   create-points 1 [set shape "circle"  set assigned false set color white setxy (0) (scale) set num who]
+   if(forms = "big")[
+   create-points 2 [set shape "circle"  set assigned false set color white setxy (who * scale) (who * scale)]
+   create-points 1 [set shape "circle"  set assigned false set color white setxy (scale) (0)]
+   create-points 1 [set shape "circle"  set assigned false set color white setxy (0) (scale) ]
    create-points 5 [set shape "circle"  set assigned false set color white setxy (3 * who) (3 * who)]
     create-points 1 [set shape "square"  set assigned false set color white setxy (- scale) (-4)]
     create-points 1 [set shape "square"  set assigned false set color white setxy (scale) (-4)]
     create-points 1 [set shape "square"  set assigned false set color white setxy (-4) (scale)]
 
     ; creation des robots
-    create-robots 12 [setxy random-pxcor random-pycor set color white set leader false set assigned false set arrived false set grade (random 7)]
-    ask robots [set label who]
+    create-robots 12 [setxy random-pxcor random-pycor set color white set leader false set arrived false]
+    ;ask robots [set label who]
   ]
-
+  ask robots [set shape "person" set size 3]
+  set dir random 360
   choix
 end
 
@@ -105,16 +109,16 @@ to choix
 end
 
 to move
-  clean
-  set moveX random 10
-  set moveY random 10
 
-  ask robots
-  [
-     set ciblex (ciblex + moveX)
-     set cibley (cibley + moveY)
-  ]
-  go
+  ifelse(moveRand = false)
+      [ask robots [set heading direction fd 1]]
+      [
+        if((ticks mod 100) = 0)[
+           set dir random 360
+        ]
+        ask robots [set heading dir fd 1]
+      ]
+   tick
 end
 
 to clean
@@ -130,8 +134,8 @@ to haut
   ask robots [
     set ciblex ciblex
     set cibley (cibley + dep)
+    fd speed
   ]
-  go
 end
 
 
@@ -139,16 +143,16 @@ to bas
   ask robots [
     set ciblex ciblex
     set cibley (cibley - dep)
+    fd speed
   ]
-  go
 end
 
 to gauche
   ask robots [
     set cibley cibley
     set ciblex (ciblex - dep)
+    fd speed
   ]
-  go
 end
 
 
@@ -156,8 +160,8 @@ to droite
   ask robots [
     set cibley cibley
     set ciblex (ciblex + dep)
+    fd speed
   ]
-  go
 end
 
 
@@ -172,10 +176,13 @@ to go
 
              ask robots-here with [myself != self]  [set isAssigned arrived]
              ifelse(isAssigned = false)
-                [setxy ciblex cibley set label-color yellow set arrived true]
+                [setxy ciblex cibley set color yellow set arrived true]
                 [let p one-of points
-                 set [pointx] of myself ([xcor] of p)
-                 set [pointY] of myself ([ycor] of p)
+                 set pointx ([xcor] of p)
+                 set pointY ([ycor] of p)
+                 set ciblex  [pointx] of self
+                 set cibley  [pointy] of self
+
                 ]
          ]
 
@@ -199,8 +206,8 @@ GRAPHICS-WINDOW
 1
 1
 0
-0
-0
+1
+1
 1
 -80
 80
@@ -297,8 +304,8 @@ CHOOSER
 527
 forms
 forms
-"carre" "triangle" "fleche" "ligne"
-1
+"carre" "triangle" "fleche" "ligne" "big"
+4
 
 SLIDER
 11
@@ -339,7 +346,7 @@ BUTTON
 531
 move
 move
-NIL
+T
 1
 T
 OBSERVER
@@ -416,6 +423,32 @@ D
 NIL
 NIL
 1
+
+SLIDER
+13
+116
+185
+149
+direction
+direction
+-180
+180
+0.0
+10
+1
+NIL
+HORIZONTAL
+
+SWITCH
+186
+551
+318
+584
+moveRand
+moveRand
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
