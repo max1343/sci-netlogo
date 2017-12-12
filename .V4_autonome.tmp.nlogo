@@ -158,7 +158,7 @@ to go
           [
             if(other robots-here = true)[
                ask robots-here [ set isAssigned arrived ]
-            ]
+
 
           ifelse(isAssigned = false)
           [setxy ciblex cibley set label-color yellow set arrived true]
