@@ -19,8 +19,8 @@ globals [
 ];
 
 to shuf
-  ask robots [setxy random-pxcor random-pycor set leader false set assigned false set label-color white]
-  choix
+  ask robots [setxy random-pxcor random-pycor set leader false set arrived false set label-color white]
+  ;choix
 end
 
 
@@ -78,7 +78,7 @@ to choix
     [
       let p one-of points with [assigned = false]
       set pointx ([xcor] of p)
-      set pointY ([ycor] of p)
+      set pointy ([ycor] of p)
       set npoint ([num] of p)
       set assigned true          ; ce robot est affecte
       ;print "hello"
@@ -156,16 +156,15 @@ to go
       ifelse ((distancexy ciblex cibley) > 0.5)
           [fd speed]
           [
-            if(other robots-here = true)[
-               ask robots-here [ set isAssigned arrived ]
 
+             ask robots-here with [myself != self]  [set isAssigned arrived]
+             ifelse(isAssigned = false)
+                [setxy ciblex cibley set label-color yellow set arrived true]
+                [let p one-of points
+                 set pointx ([xcor] of p)
+                 set pointY ([ycor] of p)
 
-          ifelse(isAssigned = false)
-          [setxy ciblex cibley set label-color yellow set arrived true]
-          [let p one-of points
-           set pointx ([xcor] of p)
-           set pointY ([ycor] of p)
-          ]
+                ]
          ]
 
      ]
